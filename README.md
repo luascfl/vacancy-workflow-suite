@@ -1,6 +1,6 @@
 # Vacancy Workflow Suite
 
-Userscript único para os fluxos de vagas CIEE, ESPRO TAQE, ISBET e IEL Bahia exportados do Automa.
+Userscript único para os fluxos de vagas CIEE, ESPRO TAQE, ISBET, IEL Bahia e Start Carreiras exportados do Automa.
 
 ## Recursos
 
@@ -9,7 +9,7 @@ Userscript único para os fluxos de vagas CIEE, ESPRO TAQE, ISBET e IEL Bahia ex
 - IEL Bahia: Salvador, Psicologia para estágio, e categoria de aprendiz quando escolhida.
 - ESPRO TAQE: cidade Salvador.
 - ISBET: Bahia, Salvador e aprendiz.
-- Salva até 50 links de vagas visíveis em `Alertas capturados` da planilha `$$alertasCentral`.
+- Salva até 50 links de vagas visíveis em `Alertas capturados` da planilha `$$alertasCentral`, inclusive no Start Carreiras.
 
 ## Configuração
 

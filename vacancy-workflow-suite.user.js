@@ -9,6 +9,7 @@
 // @match        https://candidato.ielbahia.com.br/Vaga*
 // @match        https://*.taqe.com.br/*
 // @match        https://isbet.org.br/*
+// @match        https://estudante.startcarreiras.com/*
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
@@ -37,6 +38,7 @@
     if (host.includes('ielbahia.com.br')) return 'IEL Bahia';
     if (host.includes('taqe.com.br')) return 'ESPRO TAQE';
     if (host.includes('isbet.org.br')) return 'ISBET';
+    if (host.includes('startcarreiras.com')) return 'Start Carreiras';
     return '';
   }
 
