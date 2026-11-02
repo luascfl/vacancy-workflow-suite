@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Vacancy Workflow Suite
 // @namespace    https://github.com/luascfl/vacancy-workflow-suite
-// @version      2.1.2
+// @version      2.2.0
 // @description  Manual, source-specific vacancy workflows for CIEE, IEL Bahia, TAQE, ISBET, and Start Carreiras.
 // @author       luascfl
 // @license      MIT
@@ -57,6 +57,8 @@
     'ESPRO TAQE': { default: ['alertasEspro', 'Alertas!A:A'] },
   });
   let saving = false;
+  let isbetFiltering = false;
+  let isbetFilterKind = '';
 
   const normal = (value) => String(value || '').replace(/\s+/g, ' ').trim();
   const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -277,7 +279,7 @@
     suggestion.click();
     (await waitFor('div.btn-search')).click();
     await waitFor('div.vagas-lista');
-    setStatus(`CIEE ${kind} filter applied and results rendered. Use “Save rendered vacancies” to load and save source rows.`);
+    setStatus(`${kind} · Salvador, BA. Ready to save.`);
   }
 
   async function applyIelFilters(kind) {
@@ -291,21 +293,57 @@
     setStatus(`IEL ${kind} filter applied and results rendered.`);
   }
 
+  function waitForIsbetResults(search, expectedType) {
+    const live = document.querySelector('#vagas-live');
+    const grid = document.querySelector('.jobs-grid');
+    if (!live || !grid) return Promise.reject(new Error('ISBET result status was not rendered.'));
+    return new Promise((resolve, reject) => {
+      const finish = (error, count) => {
+        clearTimeout(timer);
+        observer.disconnect();
+        if (error) reject(error);
+        else resolve(count);
+      };
+      const observer = new MutationObserver(() => {
+        const match = normal(live.textContent).match(/^(\d+) vagas carregadas\.$/i);
+        if (!match) return;
+        const count = Number(match[1]);
+        const cards = [...grid.querySelectorAll('article.job-card')];
+        if (cards.length === count && cards.every((card) => card.dataset.vagaCidade === 'Salvador' && card.dataset.vagaTipo === expectedType)) {
+          finish(null, count);
+        }
+      });
+      const timer = setTimeout(() => finish(new Error('ISBET did not confirm the filtered results.')), 15000);
+      observer.observe(live, { childList: true, subtree: true, characterData: true });
+      try { search.click(); } catch (error) { finish(error); }
+    });
+  }
+
   async function applyIsbetFilters(kind) {
-    const label = kind === 'Apprenticeship' ? /jovem aprendiz/i : /est[aá]gio/i;
-    await waitFor('.jobs-grid article.job-card');
-    const type = [...document.querySelectorAll('.jobs-filters-desktop .vaga-filter')].find((button) => label.test(normal(button.textContent)));
-    if (!type) throw new Error(`ISBET ${kind} filter button was not rendered.`);
-    type.click();
-    const state = await waitFor('select#vaga-estado-desktop');
-    await waitForEnabledOption(state, 'BA');
-    setNativeValue(state, 'BA');
-    const city = await waitFor('select#vaga-cidade-desktop');
-    await waitForEnabledOption(city, '2162');
-    setNativeValue(city, '2162');
-    (await waitFor('#jobsDesktopApply')).click();
-    await waitFor('.jobs-grid article.job-card[data-vaga-cidade="Salvador"]');
-    setStatus(`ISBET ${kind} filter applied and results rendered.`);
+    if (isbetFiltering) return;
+    isbetFiltering = true;
+    updateIsbetFilterControls();
+    try {
+      const label = kind === 'Apprenticeship' ? /jovem aprendiz/i : /est[aá]gio/i;
+      await waitFor('.jobs-filters-desktop .vaga-filter');
+      const search = await waitFor('#jobsDesktopApply');
+      if (search.disabled) throw new Error('ISBET is still loading results. Wait before changing filters.');
+      const type = [...document.querySelectorAll('.jobs-filters-desktop .vaga-filter')].find((button) => label.test(normal(button.textContent)));
+      if (!type) throw new Error(`ISBET ${kind} filter button was not rendered.`);
+      type.click();
+      const state = await waitFor('select#vaga-estado-desktop');
+      await waitForEnabledOption(state, 'BA');
+      setNativeValue(state, 'BA');
+      const city = await waitFor('select#vaga-cidade-desktop');
+      await waitForEnabledOption(city, '2162');
+      setNativeValue(city, '2162');
+      const count = await waitForIsbetResults(search, kind === 'Apprenticeship' ? 'aprendiz' : 'estagio');
+      isbetFilterKind = kind;
+      setStatus(count ? `${count} vacancies found. Ready to save.` : 'No vacancies found for this filter.');
+    } finally {
+      isbetFiltering = false;
+      updateIsbetFilterControls();
+    }
   }
 
   async function applyTaqeFilters() {
@@ -367,11 +405,11 @@
         : document.querySelector('#candidatar > .mat-mdc-button-touch-target') ? 'application available'
           : document.querySelector('a.link-interesse') ? 'interest available' : 'no supported scheduling state rendered';
     renderScheduleLinks(links, kind, state);
-    setStatus(`CIEE ${kind}: ${links.length} authorized source link(s); current page state: ${state}.`);
+    setStatus(`${kind}: ${links.length} source link(s); ${state}.`);
   }
 
   function renderScheduleLinks(links, kind, state) {
-    const target = document.querySelector(`#${PANEL_ID} .schedule-links`);
+    const target = document.getElementById(PANEL_ID)?.shadowRoot?.querySelector('.schedule-links');
     if (!target) return;
     target.replaceChildren();
     const note = document.createElement('p');
@@ -419,50 +457,114 @@
   }
 
   function setStatus(message) {
-    const target = document.querySelector(`#${PANEL_ID} .status`);
+    const target = document.getElementById(PANEL_ID)?.shadowRoot?.querySelector('.status');
     if (target) target.textContent = message;
   }
 
-  function addStyle() {
-    if (document.getElementById(`${PANEL_ID}-style`)) return;
+  function updateIsbetFilterControls() {
+    const root = document.getElementById(PANEL_ID)?.shadowRoot;
+    root?.querySelectorAll('[data-isbet-kind]').forEach((button) => {
+      button.disabled = isbetFiltering;
+      button.setAttribute('aria-pressed', String(button.dataset.isbetKind === isbetFilterKind));
+    });
+  }
+
+  function addStyle(root) {
     const style = document.createElement('style');
-    style.id = `${PANEL_ID}-style`;
-    style.textContent = [
-      `#${PANEL_ID}{background:#fff!important;border:1px solid #d0d7de!important;border-radius:10px!important;box-shadow:0 4px 20px #0002!important;box-sizing:border-box!important;color:#172033!important;font:14px/1.4 system-ui,sans-serif!important;letter-spacing:normal!important;max-height:60vh!important;overflow-x:hidden!important;overflow-y:auto!important;padding:10px!important;position:fixed!important;right:12px!important;bottom:12px!important;text-transform:none!important;width:260px!important;z-index:2147483647!important}`,
-      `#${PANEL_ID} h2{color:#172033!important;font:600 14px/1.3 system-ui,sans-serif!important;letter-spacing:normal!important;margin:0 0 6px!important;text-transform:none!important}`,
-      `#${PANEL_ID} p{color:#374151!important;font:12px/1.4 system-ui,sans-serif!important;margin:4px 0!important;text-transform:none!important}`,
-      `#${PANEL_ID} .actions{display:grid!important;gap:6px!important}`,
-      `#${PANEL_ID} button{background:#0a66c2!important;border:0!important;border-radius:6px!important;box-sizing:border-box!important;color:#fff!important;cursor:pointer!important;font:600 12px/1.3 system-ui,sans-serif!important;letter-spacing:normal!important;margin:0!important;padding:7px 9px!important;text-align:left!important;text-transform:none!important;white-space:normal!important;width:100%!important}`,
-      `#${PANEL_ID} button.secondary{background:#4b5563!important}`,
-      `#${PANEL_ID} .status,#${PANEL_ID} .schedule-links{min-height:16px!important}`,
-      `#${PANEL_ID} .schedule-links a{display:block!important;margin:4px 0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}`,
-    ].join('');
-    document.head.append(style);
+    style.textContent = `
+      :host { color-scheme: light; }
+      *, *::before, *::after { box-sizing: border-box; }
+      .panel { background: #fff; border: 1px solid #dde3eb; border-radius: 12px; box-shadow: 0 6px 24px #18233324; color: #182333; font: 13px/1.45 system-ui, sans-serif; letter-spacing: normal; overflow: hidden; text-align: left; text-transform: none; }
+      header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; }
+      h2, p { margin: 0; }
+      h2 { color: #182333; font-size: 14px; font-weight: 650; line-height: 1.3; }
+      .subtitle, .region { color: #657184; font-size: 11px; }
+      .content { border-top: 1px solid #dde3eb; max-height: min(60vh, calc(100vh - 92px)); overflow: auto; overscroll-behavior: contain; padding: 12px; }
+      [hidden] { display: none !important; }
+      .actions, .extra-actions { display: grid; gap: 8px; }
+      button { appearance: none; background: #fff; border: 1px solid #dde3eb; border-radius: 6px; color: #182333; cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; line-height: 1.4; margin: 0; min-height: 34px; padding: 7px 10px; text-align: left; white-space: normal; }
+      button:hover { background: #f3f6fa; border-color: #657184; }
+      button:disabled { cursor: wait; opacity: .6; }
+      button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid #1764d5; outline-offset: 3px; }
+      .toggle { flex: none; min-height: 30px; padding: 5px 8px; font-size: 11px; }
+      .primary { background: #1764d5; border-color: #1764d5; color: #fff; text-align: center; width: 100%; }
+      .primary:hover { background: #1252b3; border-color: #1252b3; }
+      .filters { display: flex; flex-wrap: wrap; gap: 6px; }
+      .filters button { border-radius: 999px; flex: 1; text-align: center; }
+      .filters button[aria-pressed="true"] { background: #edf4ff; border-color: #1764d5; color: #1252b3; }
+      .region { margin-bottom: 6px; }
+      .filter-group { margin-bottom: 10px; }
+      .status { color: #657184; font-size: 12px; margin-top: 10px; overflow-wrap: anywhere; white-space: pre-wrap; }
+      details { border-top: 1px solid #dde3eb; margin-top: 12px; padding-top: 9px; }
+      summary { color: #657184; cursor: pointer; font-size: 12px; padding: 3px 0; }
+      .extra-actions { margin-top: 9px; }
+      .schedule-links:empty { display: none; }
+      .schedule-links { font-size: 12px; margin-top: 10px; overflow-wrap: anywhere; }
+      .schedule-links p { color: #657184; margin-bottom: 6px; }
+      .schedule-links a { color: #1764d5; display: block; margin-top: 5px; text-decoration: underline; }
+    `;
+    root.append(style);
   }
 
   function mount() {
-    addStyle();
     document.getElementById(PANEL_ID)?.remove();
     const box = document.createElement('aside');
     box.id = PANEL_ID;
-    box.innerHTML = `<h2>Vacancy Workflow Suite</h2><p>${platform()}</p><div class="actions"></div><p class="status">Manual actions only. No application or appointment is automatic.</p><div class="schedule-links"></div>`;
-    const actions = box.querySelector('.actions');
-    const add = (label, handler, className = '') => {
+    box.style.cssText = 'all:initial!important;display:block!important;position:fixed!important;right:12px!important;bottom:12px!important;width:292px!important;max-width:calc(100vw - 24px)!important;z-index:2147483647!important';
+    const root = box.attachShadow({ mode: 'open' });
+    addStyle(root);
+    const panel = document.createElement('section');
+    panel.className = 'panel';
+    panel.innerHTML = `<header><div><h2></h2><p class="subtitle">Vacancy tools</p></div><button type="button" class="toggle" aria-expanded="true" aria-controls="vacancy-tools-content" aria-label="Minimize vacancy tools">Minimize</button></header><div id="vacancy-tools-content" class="content"><div class="actions"></div><p class="status" role="status" aria-live="polite">Save only when ready. No automatic applications.</p><details><summary>More tools</summary><div class="extra-actions"></div><div class="schedule-links"></div></details></div>`;
+    panel.querySelector('h2').textContent = platform() || 'Vacancies';
+    const toggle = panel.querySelector('.toggle');
+    const content = panel.querySelector('.content');
+    toggle.addEventListener('click', () => {
+      const expanded = toggle.getAttribute('aria-expanded') !== 'true';
+      toggle.setAttribute('aria-expanded', String(expanded));
+      toggle.setAttribute('aria-label', `${expanded ? 'Minimize' : 'Restore'} vacancy tools`);
+      toggle.textContent = expanded ? 'Minimize' : 'Restore';
+      content.hidden = !expanded;
+    });
+    const actions = panel.querySelector('.actions');
+    const extraActions = panel.querySelector('.extra-actions');
+    const add = (label, handler, target = actions, className = '') => {
       const button = document.createElement('button');
-      button.textContent = label; button.className = className;
-      button.addEventListener('click', () => Promise.resolve(handler()).catch((error) => setStatus(error.message)));
-      actions.append(button);
+      button.type = 'button';
+      button.textContent = label;
+      button.className = className;
+      button.addEventListener('click', () => Promise.resolve().then(handler).catch((error) => setStatus(error.message)));
+      target.append(button);
+      return button;
     };
-    if (platform() === 'CIEE') {
-      add('Inspect CIEE internship scheduling sources', () => inspectCieeScheduling('Internship'));
-      add('Inspect CIEE apprenticeship scheduling sources', () => inspectCieeScheduling('Apprenticeship'));
-      add('Confirm interest for rendered CIEE vacancy', confirmCieeInterest);
+    if (platform() === 'ISBET') {
+      const group = document.createElement('div');
+      group.className = 'filter-group';
+      group.innerHTML = '<p class="region">Salvador, BA</p><div class="filters" role="group" aria-label="ISBET vacancy type"></div>';
+      const filters = group.querySelector('.filters');
+      for (const kind of ['Apprenticeship', 'Internship']) {
+        const button = add(kind, () => applyIsbetFilters(kind), filters);
+        button.dataset.isbetKind = kind;
+        button.setAttribute('aria-pressed', 'false');
+      }
+      actions.before(group);
     }
-    if (platform() === 'IEL Bahia') { add('Apply IEL internship filter', () => applyIelFilters('Internship')); add('Apply IEL apprenticeship filter', () => applyIelFilters('Apprenticeship')); add('Rebuild IEL Login/Vaga links', rebuildIelLinks); }
-    if (platform() === 'ESPRO TAQE') add('Apply TAQE Salvador filter', applyTaqeFilters);
-    add('Save rendered vacancies to central', saveRenderedListings);
-    add('Configure adapter and legacy reads', configureAdapter, 'secondary');
+    if (platform() === 'CIEE') {
+      add('Inspect internship sources', () => inspectCieeScheduling('Internship'), extraActions);
+      add('Inspect apprenticeship sources', () => inspectCieeScheduling('Apprenticeship'), extraActions);
+      add('Confirm vacancy interest', confirmCieeInterest, extraActions);
+    }
+    if (platform() === 'IEL Bahia') {
+      add('Filter internships', () => applyIelFilters('Internship'));
+      add('Filter apprenticeships', () => applyIelFilters('Apprenticeship'));
+      add('Rebuild vacancy links', rebuildIelLinks, extraActions);
+    }
+    if (platform() === 'ESPRO TAQE') add('Filter Salvador', applyTaqeFilters);
+    add('Save vacancies', saveRenderedListings, actions, 'primary');
+    add('Settings', configureAdapter, extraActions);
+    root.append(panel);
     document.body.append(box);
+    updateIsbetFilterControls();
   }
 
   if (typeof GM_registerMenuCommand === 'function') {
