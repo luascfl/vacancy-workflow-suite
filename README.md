@@ -19,10 +19,11 @@ A manual userscript conversion of the selected Automa vacancy workflows. It work
 ## Install and configure
 
 1. Install `vacancy-workflow-suite.user.js` in Violentmonkey or Tampermonkey.
-2. On a supported platform, choose **Show Vacancy Workflow Suite** from the userscript-manager menu. The suite does not inject a panel automatically.
-3. Choose **Configure Workflow Sheets Adapter** from that panel or from the userscript menu.
-4. Enter the adapter `/exec` URL and current access token. They remain in the userscript manager’s local storage and must not be published.
-5. Choose whether to read authorized legacy platform sources before a save. This setting reads only permitted source keys/ranges, such as `alertasCiee` and `AlertasEstagio!A:A`; it never reads `alertasCentral`.
+2. On a supported platform, the floating panel appears automatically.
+3. The userscript-manager menu includes **Open CIEE internship vacancies**, **Open CIEE apprenticeship vacancies**, **Open IEL Bahia vacancies**, **Open TAQE vacancies**, **Open ISBET vacancies**, and **Open Start Carreiras vacancies**. Each opens its platform in a new tab.
+4. Choose **Configure Workflow Sheets Adapter** from that panel or from the userscript menu.
+5. Enter the adapter `/exec` URL and current access token. They remain in the userscript manager’s local storage and must not be published.
+6. Choose whether to read authorized legacy platform sources before a save. This setting reads only permitted source keys/ranges, such as `alertasCiee` and `AlertasEstagio!A:A`; it never reads `alertasCentral`.
 
 The adapter request format is `POST { operation, accessToken, … }`. Saving uses `appendVacancyAlert` and remains compatible with the central `Alertas capturados` sheet. Legacy reads use only the adapter’s `read` operation and configured `sheetKey`/`range` authorization.
 

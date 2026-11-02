@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Vacancy Workflow Suite
 // @namespace    https://github.com/luascfl/vacancy-workflow-suite
-// @version      2.0.1
+// @version      2.0.2
 // @description  Manual, source-specific vacancy workflows for CIEE, IEL Bahia, TAQE, ISBET, and Start Carreiras.
 // @author       luascfl
 // @license      MIT
@@ -17,6 +17,7 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
+// @grant        GM_openInTab
 // @grant        GM_xmlhttpRequest
 // @connect       script.google.com
 // @run-at        document-idle
@@ -30,6 +31,23 @@
     endpoint: 'workflowSheetsEndpoint', token: 'workflowSheetsAccessToken',
     legacyReads: 'vacancyWorkflowLegacyReads', saved: 'vacancyWorkflowSavedIds',
   });
+
+  const PLATFORM_STARTS = Object.freeze([
+    ['CIEE internship vacancies', 'https://portal.ciee.org.br/quero-uma-vaga/estagio/'],
+    ['CIEE apprenticeship vacancies', 'https://portal.ciee.org.br/quero-uma-vaga/jovem-aprendiz/'],
+    ['IEL Bahia vacancies', 'https://candidato.ielbahia.com.br/'],
+    ['TAQE vacancies', 'https://vagas.taqe.com.br/'],
+    ['ISBET vacancies', 'https://isbet.org.br/quero-uma-vaga/'],
+    ['Start Carreiras vacancies', 'https://estudante.startcarreiras.com/'],
+  ]);
+
+  function openPlatform(url) {
+    if (typeof GM_openInTab === 'function') {
+      GM_openInTab(url, { active: true, insert: true, setParent: true });
+      return;
+    }
+    window.open(url, '_blank', 'noopener');
+  }
   const LEGACY_RANGES = Object.freeze({
     CIEE: { internship: ['alertasCiee', 'AlertasEstagio!A:A'], apprenticeship: ['alertasCiee', 'AlertasAprendiz!A:A'] },
     ISBET: { default: ['alertasIsbet', 'Alertas!A:A'] },
@@ -435,6 +453,12 @@
     document.body.append(box);
   }
 
-  GM_registerMenuCommand('Configure Workflow Sheets Adapter', configureAdapter);
-  GM_registerMenuCommand('Show Vacancy Workflow Suite', mount);
+  if (typeof GM_registerMenuCommand === 'function') {
+    GM_registerMenuCommand('Configure Workflow Sheets Adapter', configureAdapter);
+    GM_registerMenuCommand('Show Vacancy Workflow Suite', mount);
+    for (const [label, url] of PLATFORM_STARTS) {
+      GM_registerMenuCommand(`Open ${label}`, () => openPlatform(url));
+    }
+  }
+  mount();
 })();
