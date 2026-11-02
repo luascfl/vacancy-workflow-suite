@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Vacancy Workflow Suite
 // @namespace    https://github.com/luascfl/vacancy-workflow-suite
-// @version      2.1.0
+// @version      2.1.1
 // @description  Manual, source-specific vacancy workflows for CIEE, IEL Bahia, TAQE, ISBET, and Start Carreiras.
 // @author       luascfl
 // @license      MIT
@@ -221,11 +221,11 @@
   }
 
   function extractIsbetListings() {
-    return uniqueListings([...document.querySelectorAll('div#api > div a[data-href]')].map((link) => {
-      const url = absolute(link.dataset.href);
-      const card = link.closest('article, .elementor-widget-container, div#api > div');
-      return { platform: 'ISBET', id: byIdFromUrl(url, normal(link.textContent)), title: normal(link.querySelector('h1,h2,h3,h4,h5')?.textContent || link.textContent), url, location: normal(card?.querySelector('.location,.cidade')?.textContent) };
-    }).filter((listing) => listing.title && /^https:\/\//.test(listing.url)));
+    return uniqueListings([...document.querySelectorAll('.jobs-grid article.job-card[data-vaga-id]')].map((card) => {
+      const id = card.dataset.vagaId;
+      const field = (name) => normal(card.querySelector(`[data-field="${name}"]`)?.textContent);
+      return { platform: 'ISBET', id, title: field('titulo'), company: field('empresa'), location: field('localidade'), url: `https://isbet.org.br/quero-uma-vaga/#${encodeURIComponent(id)}` };
+    }).filter((listing) => listing.id && listing.title));
   }
 
   async function extractStartListings() {
@@ -292,15 +292,19 @@
   }
 
   async function applyIsbetFilters(kind) {
-    const type = await waitFor('select#form-field-tipo_de_vaga');
-    const state = await waitFor('select#form-field-estado');
-    const city = await waitFor('select#form-field-cidade');
-    setNativeValue(type, kind === 'Apprenticeship' ? 'J' : 'E');
+    const label = kind === 'Apprenticeship' ? /jovem aprendiz/i : /est[aá]gio/i;
+    await waitFor('.jobs-grid article.job-card');
+    const type = [...document.querySelectorAll('.jobs-filters-desktop .vaga-filter')].find((button) => label.test(normal(button.textContent)));
+    if (!type) throw new Error(`ISBET ${kind} filter button was not rendered.`);
+    type.click();
+    const state = await waitFor('select#vaga-estado-desktop');
+    await waitForEnabledOption(state, 'BA');
     setNativeValue(state, 'BA');
+    const city = await waitFor('select#vaga-cidade-desktop');
     await waitForEnabledOption(city, '2162');
     setNativeValue(city, '2162');
-    (await waitFor('.elementor-field-group .elementor-button-text')).click();
-    await waitFor('div#api > div a[data-href]');
+    (await waitFor('#jobsDesktopApply')).click();
+    await waitFor('.jobs-grid article.job-card[data-vaga-cidade="Salvador"]');
     setStatus(`ISBET ${kind} filter applied and results rendered.`);
   }
 
