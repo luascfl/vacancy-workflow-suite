@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Vacancy Workflow Suite
 // @namespace    https://github.com/luascfl/vacancy-workflow-suite
-// @version      2.1.1
+// @version      2.1.2
 // @description  Manual, source-specific vacancy workflows for CIEE, IEL Bahia, TAQE, ISBET, and Start Carreiras.
 // @author       luascfl
 // @license      MIT
@@ -454,14 +454,12 @@
       actions.append(button);
     };
     if (platform() === 'CIEE') {
-      if (location.hostname !== 'ciee.app') { add('Apply CIEE internship filter', () => applyCieeFilters('Internship')); add('Apply CIEE apprenticeship filter', () => applyCieeFilters('Apprenticeship')); }
       add('Inspect CIEE internship scheduling sources', () => inspectCieeScheduling('Internship'));
       add('Inspect CIEE apprenticeship scheduling sources', () => inspectCieeScheduling('Apprenticeship'));
       add('Confirm interest for rendered CIEE vacancy', confirmCieeInterest);
     }
     if (platform() === 'IEL Bahia') { add('Apply IEL internship filter', () => applyIelFilters('Internship')); add('Apply IEL apprenticeship filter', () => applyIelFilters('Apprenticeship')); add('Rebuild IEL Login/Vaga links', rebuildIelLinks); }
     if (platform() === 'ESPRO TAQE') add('Apply TAQE Salvador filter', applyTaqeFilters);
-    if (platform() === 'ISBET') { add('Apply ISBET apprenticeship filter', () => applyIsbetFilters('Apprenticeship')); add('Apply ISBET internship filter', () => applyIsbetFilters('Internship')); }
     add('Save rendered vacancies to central', saveRenderedListings);
     add('Configure adapter and legacy reads', configureAdapter, 'secondary');
     document.body.append(box);
