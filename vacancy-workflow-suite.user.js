@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Vacancy Workflow Suite
 // @namespace    https://github.com/luascfl/vacancy-workflow-suite
-// @version      2.0.4
+// @version      2.1.0
 // @description  Manual, source-specific vacancy workflows for CIEE, IEL Bahia, TAQE, ISBET, and Start Carreiras.
 // @author       luascfl
 // @license      MIT
@@ -471,4 +471,12 @@
     }
   }
   mount();
+
+  // Automa ran these source filters on page open; do the same, once per page load.
+  const autoFilter = platform() === 'CIEE' && location.hostname !== 'ciee.app' && /\/quero-uma-vaga\/(estagio|jovem-aprendiz)\/?$/.test(location.pathname)
+    ? () => applyCieeFilters(location.pathname.includes('jovem-aprendiz') ? 'Apprenticeship' : 'Internship')
+    : platform() === 'ISBET' && location.pathname.includes('quero-uma-vaga')
+      ? () => applyIsbetFilters('Apprenticeship')
+      : null;
+  if (autoFilter) autoFilter().catch((error) => setStatus(error.message));
 })();
