@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Vacancy Workflow Suite
 // @namespace    https://github.com/luascfl/vacancy-workflow-suite
-// @version      2.0.0
+// @version      2.0.1
 // @description  Manual, source-specific vacancy workflows for CIEE, IEL Bahia, TAQE, ISBET, and Start Carreiras.
 // @author       luascfl
 // @license      MIT
@@ -436,6 +436,5 @@
   }
 
   GM_registerMenuCommand('Configure Workflow Sheets Adapter', configureAdapter);
-  GM_registerMenuCommand('Reopen Vacancy Workflow Suite', mount);
-  mount();
+  GM_registerMenuCommand('Show Vacancy Workflow Suite', mount);
 })();
