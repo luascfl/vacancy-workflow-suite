@@ -47,7 +47,7 @@ Open a displayed source link yourself, log in yourself when required, then inspe
 
 ## Start Carreiras source boundary
 
-The source graph contains authenticated, positional UI steps and private login inputs but no stable, named filter contract. This suite intentionally does not replay those credentials or guess the positional filters. After the user signs in and renders the source table, its exact row/share/clipboard extraction is fully available through the explicit save command.
+Start Carreiras now redirects its student portal to `estudante.vetto.ai`, so the userscript matches both hosts. The source graph contains authenticated, positional UI steps and private login inputs but no stable, named filter contract. This suite intentionally does not replay those credentials or guess the positional filters. After the user signs in and renders the source table, its exact row/share/clipboard extraction is fully available through the explicit save command.
 
 ## Permissions and browser requirements
 

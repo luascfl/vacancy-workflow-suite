@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Vacancy Workflow Suite
 // @namespace    https://github.com/luascfl/vacancy-workflow-suite
-// @version      2.0.3
+// @version      2.0.4
 // @description  Manual, source-specific vacancy workflows for CIEE, IEL Bahia, TAQE, ISBET, and Start Carreiras.
 // @author       luascfl
 // @license      MIT
@@ -14,6 +14,7 @@
 // @match        https://*.taqe.com.br/*
 // @match        https://isbet.org.br/*
 // @match        https://estudante.startcarreiras.com/*
+// @match        https://estudante.vetto.ai/*
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
@@ -38,7 +39,7 @@
     ['IEL Bahia vacancies', 'https://candidato.ielbahia.com.br/'],
     ['TAQE vacancies', 'https://vagas.taqe.com.br/'],
     ['ISBET vacancies', 'https://isbet.org.br/quero-uma-vaga/'],
-    ['Start Carreiras vacancies', 'https://estudante.startcarreiras.com/'],
+    ['Start Carreiras vacancies', 'https://estudante.vetto.ai/'],
   ]);
 
   function openPlatform(url) {
@@ -68,7 +69,7 @@
     if (host.includes('ielbahia.com.br')) return 'IEL Bahia';
     if (host.includes('taqe.com.br')) return 'ESPRO TAQE';
     if (host.includes('isbet.org.br')) return 'ISBET';
-    if (host.includes('startcarreiras.com')) return 'Start Carreiras';
+    if (host.includes('startcarreiras.com') || host === 'estudante.vetto.ai') return 'Start Carreiras';
     return '';
   }
 
@@ -423,11 +424,11 @@
     const style = document.createElement('style');
     style.id = `${PANEL_ID}-style`;
     style.textContent = [
-      `#${PANEL_ID}{background:#fff!important;border:1px solid #d0d7de!important;border-radius:10px!important;box-shadow:0 4px 20px #0002!important;color:#172033!important;font:14px/1.4 system-ui,sans-serif!important;letter-spacing:normal!important;max-height:60vh!important;overflow:auto!important;padding:10px!important;position:fixed!important;right:12px!important;bottom:12px!important;text-transform:none!important;width:260px!important;z-index:2147483647!important}`,
+      `#${PANEL_ID}{background:#fff!important;border:1px solid #d0d7de!important;border-radius:10px!important;box-shadow:0 4px 20px #0002!important;box-sizing:border-box!important;color:#172033!important;font:14px/1.4 system-ui,sans-serif!important;letter-spacing:normal!important;max-height:60vh!important;overflow-x:hidden!important;overflow-y:auto!important;padding:10px!important;position:fixed!important;right:12px!important;bottom:12px!important;text-transform:none!important;width:260px!important;z-index:2147483647!important}`,
       `#${PANEL_ID} h2{color:#172033!important;font:600 14px/1.3 system-ui,sans-serif!important;letter-spacing:normal!important;margin:0 0 6px!important;text-transform:none!important}`,
       `#${PANEL_ID} p{color:#374151!important;font:12px/1.4 system-ui,sans-serif!important;margin:4px 0!important;text-transform:none!important}`,
       `#${PANEL_ID} .actions{display:grid!important;gap:6px!important}`,
-      `#${PANEL_ID} button{background:#0a66c2!important;border:0!important;border-radius:6px!important;color:#fff!important;cursor:pointer!important;font:600 12px/1.3 system-ui,sans-serif!important;letter-spacing:normal!important;margin:0!important;padding:7px 9px!important;text-align:left!important;text-transform:none!important;width:100%!important}`,
+      `#${PANEL_ID} button{background:#0a66c2!important;border:0!important;border-radius:6px!important;box-sizing:border-box!important;color:#fff!important;cursor:pointer!important;font:600 12px/1.3 system-ui,sans-serif!important;letter-spacing:normal!important;margin:0!important;padding:7px 9px!important;text-align:left!important;text-transform:none!important;white-space:normal!important;width:100%!important}`,
       `#${PANEL_ID} button.secondary{background:#4b5563!important}`,
       `#${PANEL_ID} .status,#${PANEL_ID} .schedule-links{min-height:16px!important}`,
       `#${PANEL_ID} .schedule-links a{display:block!important;margin:4px 0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}`,
